@@ -1,10 +1,10 @@
-package dev.sp1ley.immersivehelper.command;
+package org.immersivehelper.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import dev.sp1ley.immersivehelper.data.AliceRegistry;
-import dev.sp1ley.immersivehelper.entity.GuideEntity;
-import dev.sp1ley.immersivehelper.entity.ModEntities;
+import org.immersivehelper.data.AliceRegistry;
+import org.immersivehelper.entity.GuideEntity;
+import org.immersivehelper.entity.ModEntities;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

@@ -1,6 +1,6 @@
-package dev.sp1ley.immersivehelper.entity;
+package org.immersivehelper.entity;
 
-import dev.sp1ley.immersivehelper.ImmersiveHelper;
+import org.immersivehelper.ImmersiveHelper;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;

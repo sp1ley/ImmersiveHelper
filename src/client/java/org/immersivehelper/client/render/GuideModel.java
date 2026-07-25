@@ -1,9 +1,9 @@
-package dev.sp1ley.immersivehelper.client.render;
+package org.immersivehelper.client.render;
 
 import com.geckolib.model.GeoModel;
 import com.geckolib.renderer.base.GeoRenderState;
-import dev.sp1ley.immersivehelper.ImmersiveHelper;
-import dev.sp1ley.immersivehelper.entity.GuideEntity;
+import org.immersivehelper.ImmersiveHelper;
+import org.immersivehelper.entity.GuideEntity;
 import net.minecraft.resources.Identifier;
 
 public final class GuideModel extends GeoModel<GuideEntity> {

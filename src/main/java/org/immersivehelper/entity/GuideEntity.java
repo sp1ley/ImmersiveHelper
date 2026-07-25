@@ -1,4 +1,4 @@
-package dev.sp1ley.immersivehelper.entity;
+package org.immersivehelper.entity;
 
 import com.geckolib.animatable.GeoEntity;
 import com.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -7,10 +7,13 @@ import com.geckolib.animation.AnimationController;
 import com.geckolib.animation.RawAnimation;
 import com.geckolib.animation.object.PlayState;
 import com.geckolib.util.GeckoLibUtil;
-import dev.sp1ley.immersivehelper.data.AliceRegistry;
+import org.immersivehelper.data.AliceRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,11 +51,17 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class GuideEntity extends PathfinderMob implements GeoEntity {
+    private static final EntityDataAccessor<Boolean> DATA_WEAPON_DRAWN =
+            SynchedEntityData.defineId(GuideEntity.class, EntityDataSerializers.BOOLEAN);
     private static final int BAG_SIZE = 18;
     private static final int PICKUP_SCAN_INTERVAL = 20;
+    private static final int COMBAT_TARGET_UPDATE_INTERVAL = 5;
     private static final int FOOD_COOLDOWN_TICKS = 20 * 30;
     private static final int INTERACTION_COOLDOWN_TICKS = 10;
     private static final int COMBAT_MEMORY_TICKS = 20 * 10;
+    private static final int WEAPON_STOW_DELAY_TICKS = 20 * 3;
+    private static final double MAX_COMBAT_DISTANCE_SQ = 32.0 * 32.0;
+    private static final double STAY_DEFENSE_RADIUS_SQ = 10.0 * 10.0;
     private static final double PICKUP_RADIUS = 6.0;
     private static final double FOLLOW_START_DISTANCE_SQ = 25.0;
     private static final double FOLLOW_STOP_DISTANCE_SQ = 9.0;
@@ -63,6 +72,10 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     private static final String TAG_GREETED = "AliceGreeted";
     private static final String TAG_BAG = "AliceBag";
     private static final String TAG_BAG_FULL_NOTIFIED = "AliceBagFullNotified";
+    private static final String TAG_HAS_STAY_POSITION = "AliceHasStayPosition";
+    private static final String TAG_STAY_X = "AliceStayX";
+    private static final String TAG_STAY_Y = "AliceStayY";
+    private static final String TAG_STAY_Z = "AliceStayZ";
 
     private static final RawAnimation IDLE_ANIMATION = RawAnimation.begin().thenLoop("animation.guide.idle");
     private static final RawAnimation WALK_ANIMATION = RawAnimation.begin().thenLoop("animation.guide.walk");
@@ -76,9 +89,11 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     private boolean greeted;
     private boolean bagFullNotified;
     private boolean deathHandled;
+    private BlockPos stayPosition;
     private int foodCooldown;
     private int interactionCooldown;
     private int teleportMessageCooldown;
+    private int weaponHoldTicks;
 
     public GuideEntity(EntityType<? extends GuideEntity> entityType, Level level) {
         super(entityType, level);
@@ -97,15 +112,25 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new MeleeAttackGoal(this, 1.05, true));
-        goalSelector.addGoal(2, new FollowOwnerGoal());
-        goalSelector.addGoal(3, new PickUpItemsGoal());
+        goalSelector.addGoal(2, new ReturnToStayGoal());
+        goalSelector.addGoal(3, new FollowOwnerGoal());
+        goalSelector.addGoal(4, new PickUpItemsGoal());
         goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 8.0F));
         goalSelector.addGoal(9, new RandomLookAroundGoal(this));
-        targetSelector.addGoal(1, new HurtByTargetGoal(this));
+        targetSelector.addGoal(1, new DefendSelfGoal());
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(DATA_WEAPON_DRAWN, false);
     }
 
     @Override
     protected void customServerAiStep(ServerLevel level) {
+        if (staying && stayPosition == null) {
+            stayPosition = blockPosition();
+        }
         super.customServerAiStep(level);
 
         if (foodCooldown > 0) {
@@ -118,7 +143,11 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             teleportMessageCooldown--;
         }
 
-        updateCombatTarget();
+        validateCurrentCombatTarget();
+        if (tickCount % COMBAT_TARGET_UPDATE_INTERVAL == 0) {
+            updateCombatTarget();
+        }
+        updateWeaponState();
         if (tickCount % 10 == 0) {
             tryGiveEmergencyFood(level);
         }
@@ -141,6 +170,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         }
 
         staying = !staying;
+        stayPosition = staying ? blockPosition() : null;
         interactionCooldown = INTERACTION_COOLDOWN_TICKS;
         getNavigation().stop();
         setTarget(null);
@@ -171,6 +201,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         }
         boolean attacked = super.doHurtTarget(level, target);
         if (attacked) {
+            markCombatActive();
             triggerAnim("attack_controller", "attack");
         }
         return attacked;
@@ -180,7 +211,9 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     public boolean canAttack(LivingEntity target) {
         boolean directSelfDefense = target == getLastHurtByMob()
                 && isRecent(getLastHurtByMobTimestamp());
-        return isValidCombatTarget(target, directSelfDefense) && super.canAttack(target);
+        return isValidCombatTarget(target, directSelfDefense)
+                && isWithinAllowedCombatArea(target)
+                && super.canAttack(target);
     }
 
     @Override
@@ -192,6 +225,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     public void die(DamageSource damageSource) {
         if (!deathHandled && level() instanceof ServerLevel level) {
             deathHandled = true;
+            setWeaponDrawn(false);
             if (ownerUuid != null) {
                 AliceRegistry.get(level.getServer()).remove(ownerUuid, getUUID());
             }
@@ -213,6 +247,12 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         output.putBoolean(TAG_STAYING, staying);
         output.putBoolean(TAG_GREETED, greeted);
         output.putBoolean(TAG_BAG_FULL_NOTIFIED, bagFullNotified);
+        output.putBoolean(TAG_HAS_STAY_POSITION, stayPosition != null);
+        if (stayPosition != null) {
+            output.putInt(TAG_STAY_X, stayPosition.getX());
+            output.putInt(TAG_STAY_Y, stayPosition.getY());
+            output.putInt(TAG_STAY_Z, stayPosition.getZ());
+        }
         bag.storeAsItemList(output.list(TAG_BAG, ItemStack.CODEC));
     }
 
@@ -223,6 +263,15 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         staying = input.getBooleanOr(TAG_STAYING, false);
         greeted = input.getBooleanOr(TAG_GREETED, false);
         bagFullNotified = input.getBooleanOr(TAG_BAG_FULL_NOTIFIED, false);
+        stayPosition = input.getBooleanOr(TAG_HAS_STAY_POSITION, false)
+                ? new BlockPos(
+                        input.getIntOr(TAG_STAY_X, getBlockX()),
+                        input.getIntOr(TAG_STAY_Y, getBlockY()),
+                        input.getIntOr(TAG_STAY_Z, getBlockZ())
+                )
+                : null;
+        weaponHoldTicks = 0;
+        setWeaponDrawn(false);
         bag.clearContent();
         bag.fromItemList(input.listOrEmpty(TAG_BAG, ItemStack.CODEC));
     }
@@ -255,6 +304,10 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
 
     public boolean isStaying() {
         return staying;
+    }
+
+    public boolean isWeaponDrawn() {
+        return entityData.get(DATA_WEAPON_DRAWN);
     }
 
     public void sendGreeting(ServerPlayer player) {
@@ -366,13 +419,10 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     }
 
     private void updateCombatTarget() {
-        LivingEntity current = getTarget();
-        if (current != null && !canAttack(current)) {
-            setTarget(null);
-        }
-
         LivingEntity attacker = getLastHurtByMob();
-        if (isRecent(getLastHurtByMobTimestamp()) && isValidCombatTarget(attacker, true)) {
+        if (isRecent(getLastHurtByMobTimestamp())
+                && isValidCombatTarget(attacker, true)
+                && isWithinAllowedCombatArea(attacker)) {
             setTarget(attacker);
             return;
         }
@@ -386,14 +436,60 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         }
         LivingEntity ownerAttacker = owner.getLastHurtByMob();
         if (owner.tickCount - owner.getLastHurtByMobTimestamp() <= COMBAT_MEMORY_TICKS
-                && isValidCombatTarget(ownerAttacker, false)) {
+                && isValidCombatTarget(ownerAttacker, false)
+                && isWithinAllowedCombatArea(ownerAttacker)) {
             setTarget(ownerAttacker);
             return;
         }
         LivingEntity ownerVictim = owner.getLastHurtMob();
         if (owner.tickCount - owner.getLastHurtMobTimestamp() <= COMBAT_MEMORY_TICKS
-                && isValidCombatTarget(ownerVictim, false)) {
+                && isValidCombatTarget(ownerVictim, false)
+                && isWithinAllowedCombatArea(ownerVictim)) {
             setTarget(ownerVictim);
+        }
+    }
+
+    private void validateCurrentCombatTarget() {
+        LivingEntity current = getTarget();
+        if (current != null && !canAttack(current)) {
+            setTarget(null);
+            getNavigation().stop();
+        }
+    }
+
+    private boolean isWithinAllowedCombatArea(LivingEntity target) {
+        if (target == null) {
+            return false;
+        }
+        if (staying) {
+            return stayPosition != null
+                    && target.position().distanceToSqr(Vec3.atCenterOf(stayPosition)) <= STAY_DEFENSE_RADIUS_SQ;
+        }
+        return distanceToSqr(target) <= MAX_COMBAT_DISTANCE_SQ;
+    }
+
+    private void markCombatActive() {
+        weaponHoldTicks = WEAPON_STOW_DELAY_TICKS;
+        setWeaponDrawn(true);
+    }
+
+    private void updateWeaponState() {
+        LivingEntity target = getTarget();
+        if (target != null && canAttack(target)) {
+            markCombatActive();
+            return;
+        }
+        if (weaponHoldTicks > 0) {
+            weaponHoldTicks--;
+        }
+        if (weaponHoldTicks == 0) {
+            setWeaponDrawn(false);
+        }
+    }
+
+    private void setWeaponDrawn(boolean drawn) {
+        if (entityData.get(DATA_WEAPON_DRAWN) != drawn) {
+            entityData.set(DATA_WEAPON_DRAWN, drawn);
         }
     }
 
@@ -561,6 +657,67 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     }
 
     public record TransferResult(int transferred, int dropped) {
+    }
+
+    private final class DefendSelfGoal extends HurtByTargetGoal {
+        private DefendSelfGoal() {
+            super(GuideEntity.this);
+        }
+
+        @Override
+        public boolean canUse() {
+            if (!super.canUse()) {
+                return false;
+            }
+            LivingEntity attacker = getLastHurtByMob();
+            return isRecent(getLastHurtByMobTimestamp())
+                    && isValidCombatTarget(attacker, true)
+                    && isWithinAllowedCombatArea(attacker);
+        }
+    }
+
+    private final class ReturnToStayGoal extends Goal {
+        private int pathRecalculation;
+
+        private ReturnToStayGoal() {
+            setFlags(EnumSet.of(Flag.MOVE));
+        }
+
+        @Override
+        public boolean canUse() {
+            return staying
+                    && stayPosition != null
+                    && getTarget() == null
+                    && distanceToSqr(Vec3.atCenterOf(stayPosition)) > 2.25;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return canUse() && !getNavigation().isDone();
+        }
+
+        @Override
+        public void start() {
+            pathRecalculation = 0;
+        }
+
+        @Override
+        public void stop() {
+            getNavigation().stop();
+        }
+
+        @Override
+        public void tick() {
+            if (stayPosition != null && --pathRecalculation <= 0) {
+                pathRecalculation = 10;
+                getNavigation().moveTo(
+                        stayPosition.getX() + 0.5,
+                        stayPosition.getY(),
+                        stayPosition.getZ() + 0.5,
+                        1.0
+                );
+            }
+        }
     }
 
     private final class FollowOwnerGoal extends Goal {

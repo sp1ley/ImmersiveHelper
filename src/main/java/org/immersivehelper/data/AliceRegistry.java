@@ -1,8 +1,8 @@
-package dev.sp1ley.immersivehelper.data;
+package org.immersivehelper.data;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import dev.sp1ley.immersivehelper.ImmersiveHelper;
+import org.immersivehelper.ImmersiveHelper;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;

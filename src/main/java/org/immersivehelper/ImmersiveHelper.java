@@ -1,7 +1,7 @@
-package dev.sp1ley.immersivehelper;
+package org.immersivehelper;
 
-import dev.sp1ley.immersivehelper.command.AliceCommands;
-import dev.sp1ley.immersivehelper.entity.ModEntities;
+import org.immersivehelper.command.AliceCommands;
+import org.immersivehelper.entity.ModEntities;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;

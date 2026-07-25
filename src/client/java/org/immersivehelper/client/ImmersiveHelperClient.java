@@ -1,7 +1,7 @@
-package dev.sp1ley.immersivehelper.client;
+package org.immersivehelper.client;
 
-import dev.sp1ley.immersivehelper.client.render.GuideRenderer;
-import dev.sp1ley.immersivehelper.entity.ModEntities;
+import org.immersivehelper.client.render.GuideRenderer;
+import org.immersivehelper.entity.ModEntities;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 

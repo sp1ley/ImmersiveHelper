@@ -16,10 +16,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.sp1ley.immersivehelper.ImmersiveHelper"
+      "org.immersivehelper.ImmersiveHelper"
     ],
     "client": [
-      "dev.sp1ley.immersivehelper.client.ImmersiveHelperClient"
+      "org.immersivehelper.client.ImmersiveHelperClient"
     ]
   },
   "depends": {
