@@ -23,7 +23,6 @@ import java.util.List;
 @Environment(EnvType.CLIENT)
 final class AliceSwordLayer extends ItemInHandGeoLayer<GuideEntity, Void, LivingEntityRenderState> {
     private static final String WEAPON_BONE = "right_hand_item";
-    private static final ItemStack VISUAL_STONE_SWORD = new ItemStack(Items.STONE_SWORD);
 
     // Fine-tuning for the custom Alice hand bone is intentionally kept in one place.
     private static final float TRANSLATE_X = 0.0F;
@@ -32,6 +31,8 @@ final class AliceSwordLayer extends ItemInHandGeoLayer<GuideEntity, Void, Living
     private static final float ROTATE_Y_DEGREES = -8.0F;
     private static final float ROTATE_Z_DEGREES = 4.0F;
     private static final float SCALE = 0.82F;
+
+    private ItemStack visualStoneSword;
 
     AliceSwordLayer(
             EntityRendererProvider.Context context,
@@ -53,12 +54,20 @@ final class AliceSwordLayer extends ItemInHandGeoLayer<GuideEntity, Void, Living
 
         ItemDisplayContext displayContext = ItemDisplayContext.THIRD_PERSON_RIGHT_HAND;
         ItemStackRenderState itemState = RenderUtil.createRenderStateForItem(
-                VISUAL_STONE_SWORD,
+                getVisualStoneSword(),
                 itemModelResolver,
                 displayContext,
                 animatable
         );
         return List.of(BlockAndItemGeoLayer.RenderData.item(WEAPON_BONE, displayContext, itemState));
+    }
+
+    private ItemStack getVisualStoneSword() {
+        if (visualStoneSword == null) {
+            visualStoneSword = new ItemStack(Items.STONE_SWORD);
+        }
+
+        return visualStoneSword;
     }
 
     @Override
