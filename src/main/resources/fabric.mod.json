@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "imh_mod",
+	"version": "${version}",
+	"name": "IMH-mod-fabric-1.21.11",
+	"description": "Companion NPC Mod",
+	"authors": [
+		"andBobiq"
+	],
+	"contact": {
+		"homepage": "",
+		"sources": ""
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/imh_mod/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"org.andbobiq.imh_mod.IMHModFabric"
+		],
+		"client": [
+			"org.andbobiq.imh_mod.client.IMHModFabricClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
