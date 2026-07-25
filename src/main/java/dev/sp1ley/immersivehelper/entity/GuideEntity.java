@@ -7,6 +7,7 @@ import com.geckolib.animation.AnimationController;
 import com.geckolib.animation.RawAnimation;
 import com.geckolib.animation.object.PlayState;
 import com.geckolib.util.GeckoLibUtil;
+import dev.sp1ley.immersivehelper.data.AliceRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -119,6 +120,9 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             updateCombatTarget();
             tryGiveEmergencyFood(level);
         }
+        if (ownerUuid != null && tickCount % 20 == 0) {
+            AliceRegistry.get(level.getServer()).track(ownerUuid, getUUID(), level);
+        }
     }
 
     @Override
@@ -186,6 +190,9 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     public void die(DamageSource damageSource) {
         if (!deathHandled && level() instanceof ServerLevel level) {
             deathHandled = true;
+            if (ownerUuid != null) {
+                AliceRegistry.get(level.getServer()).remove(ownerUuid, getUUID());
+            }
             dropBag(level, getX(), getY() + 0.25, getZ());
             Player owner = getOwner();
             if (owner != null) {
@@ -288,9 +295,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             transferred += moved;
             bag.setItem(slot, offered);
         }
-        if (!isBagFull()) {
-            bagFullNotified = false;
-        }
+        bagFullNotified = false;
         bag.setChanged();
         return new TransferResult(transferred, 0);
     }
@@ -414,7 +419,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
     }
 
     private void collectItem(ItemEntity item) {
-        if (!item.isAlive() || item.hasPickUpDelay() || !bag.canAddItem(item.getItem())) {
+        if (!canCollect(item)) {
             return;
         }
         ItemStack remainder = bag.addItem(item.getItem().copy());
@@ -424,29 +429,27 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             item.setItem(remainder);
         }
         bag.setChanged();
-        notifyIfBagFull();
+        notifyIfItemDoesNotFit(remainder);
     }
 
-    private void notifyIfBagFull() {
-        boolean full = isBagFull();
-        if (full && !bagFullNotified) {
+    private boolean canCollect(ItemEntity item) {
+        return item.isAlive()
+                && !item.hasPickUpDelay()
+                && item.getOwner() != this
+                && bag.canAddItem(item.getItem());
+    }
+
+    private void notifyIfItemDoesNotFit(ItemStack remainder) {
+        boolean blocked = !remainder.isEmpty() && !bag.canAddItem(remainder);
+        if (blocked && !bagFullNotified) {
             bagFullNotified = true;
             Player owner = getOwner();
             if (owner != null) {
                 owner.sendSystemMessage(Component.translatable("message.immersive_helper.alice.bag_full"));
             }
-        } else if (!full) {
+        } else if (!blocked) {
             bagFullNotified = false;
         }
-    }
-
-    private boolean isBagFull() {
-        for (int slot = 0; slot < bag.getContainerSize(); slot++) {
-            if (bag.getItem(slot).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private void tryGiveEmergencyFood(ServerLevel level) {
@@ -497,7 +500,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
                 && stack.getItem() != Items.SUSPICIOUS_STEW;
     }
 
-    private static void playerInventoryOrDrop(ServerLevel level, Player player, ItemStack offered) {
+    private void playerInventoryOrDrop(ServerLevel level, Player player, ItemStack offered) {
         player.getInventory().add(offered);
         if (offered.isEmpty()) {
             return;
@@ -510,6 +513,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
                 offered.copy()
         );
         item.setTarget(player.getUUID());
+        item.setThrower(this);
         item.setPickUpDelay(100);
         if (level.addFreshEntity(item)) {
             offered.setCount(0);
@@ -638,9 +642,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
 
             AABB area = getBoundingBox().inflate(PICKUP_RADIUS, 2.0, PICKUP_RADIUS);
             targetItem = level().getEntitiesOfClass(ItemEntity.class, area, item ->
-                            item.isAlive()
-                                    && !item.hasPickUpDelay()
-                                    && bag.canAddItem(item.getItem())
+                            canCollect(item)
                                     && getSensing().hasLineOfSight(item))
                     .stream()
                     .min(Comparator.comparingDouble(GuideEntity.this::distanceToSqr))
@@ -653,9 +655,8 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             return !staying
                     && getTarget() == null
                     && targetItem != null
-                    && targetItem.isAlive()
                     && pursuitTicks < 100
-                    && bag.canAddItem(targetItem.getItem());
+                    && canCollect(targetItem);
         }
 
         @Override

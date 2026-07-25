@@ -3,9 +3,10 @@
   "id": "immersive_helper",
   "version": "${version}",
   "name": "Immersive Helper",
-  "description": "A Fabric mod that adds Alice, an interactive adventure companion.",
+  "description": "Alice is a companion who follows the player, assists in combat, collects dropped resources, and stores them in her bag.",
   "authors": [
-    "andBobiq"
+    "andBobiq",
+    "sp1ley"
   ],
   "contact": {
     "sources": "https://github.com/sp1ley/ImmersiveHelper"

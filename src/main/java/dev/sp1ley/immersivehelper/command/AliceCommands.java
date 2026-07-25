@@ -2,6 +2,7 @@ package dev.sp1ley.immersivehelper.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import dev.sp1ley.immersivehelper.data.AliceRegistry;
 import dev.sp1ley.immersivehelper.entity.GuideEntity;
 import dev.sp1ley.immersivehelper.entity.ModEntities;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -39,7 +40,8 @@ public final class AliceCommands {
 
     private static int summon(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
-        if (findAlice(source.getServer(), player.getUUID()).isPresent()) {
+        if (AliceRegistry.get(source.getServer()).find(player.getUUID()).isPresent()
+                || findAlice(source.getServer(), player.getUUID()).isPresent()) {
             source.sendFailure(Component.translatable("command.immersive_helper.alice.already_exists"));
             return 0;
         }
@@ -66,6 +68,7 @@ public final class AliceCommands {
             return 0;
         }
 
+        AliceRegistry.get(source.getServer()).track(player.getUUID(), alice.getUUID(), level);
         alice.sendGreeting(player);
         return 1;
     }
@@ -80,6 +83,7 @@ public final class AliceCommands {
 
         GuideEntity guide = alice.get();
         GuideEntity.TransferResult result = guide.returnAndDropAll(player);
+        AliceRegistry.get(source.getServer()).remove(player.getUUID(), guide.getUUID());
         guide.discard();
         source.sendSuccess(() -> Component.translatable(
                 "command.immersive_helper.alice.dismissed",
@@ -131,11 +135,23 @@ public final class AliceCommands {
     }
 
     private static Optional<GuideEntity> findAlice(MinecraftServer server, UUID ownerUuid) {
+        AliceRegistry registry = AliceRegistry.get(server);
+        Optional<AliceRegistry.AliceRecord> record = registry.find(ownerUuid);
+        if (record.isPresent()) {
+            Entity entity = server.overworld().getEntityInAnyDimension(record.get().entityUuid());
+            if (entity instanceof GuideEntity guide
+                    && guide.isAlive()
+                    && guide.isOwnedBy(ownerUuid)) {
+                return Optional.of(guide);
+            }
+        }
+
         for (ServerLevel level : server.getAllLevels()) {
             for (Entity entity : level.getAllEntities()) {
                 if (entity instanceof GuideEntity guide
                         && guide.isAlive()
                         && guide.isOwnedBy(ownerUuid)) {
+                    registry.track(ownerUuid, guide.getUUID(), level);
                     return Optional.of(guide);
                 }
             }

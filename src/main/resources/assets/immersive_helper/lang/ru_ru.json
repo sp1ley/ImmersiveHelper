@@ -1,4 +1,6 @@
 {
+  "modmenu.nameTranslation.immersive_helper": "Immersive Helper",
+  "modmenu.descriptionTranslation.immersive_helper": "Компаньон Алиса, которая следует за игроком, помогает в бою, собирает ресурсы и хранит их во внутренней сумке.",
   "entity.immersive_helper.guide": "Алиса",
   "mode.immersive_helper.follow": "FOLLOW",
   "mode.immersive_helper.stay": "STAY",

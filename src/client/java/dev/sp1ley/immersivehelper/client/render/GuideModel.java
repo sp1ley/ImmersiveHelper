@@ -9,7 +9,7 @@ import net.minecraft.resources.Identifier;
 public final class GuideModel extends GeoModel<GuideEntity> {
     @Override
     public Identifier getModelResource(GeoRenderState renderState) {
-        return ImmersiveHelper.id("geo/guide.geo.json");
+        return ImmersiveHelper.id("guide");
     }
 
     @Override
@@ -19,6 +19,6 @@ public final class GuideModel extends GeoModel<GuideEntity> {
 
     @Override
     public Identifier getAnimationResource(GuideEntity animatable) {
-        return ImmersiveHelper.id("guide.animation");
+        return ImmersiveHelper.id("guide");
     }
 }
