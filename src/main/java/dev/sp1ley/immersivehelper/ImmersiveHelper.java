@@ -1,5 +1,6 @@
 package dev.sp1ley.immersivehelper;
 
+import dev.sp1ley.immersivehelper.command.AliceCommands;
 import dev.sp1ley.immersivehelper.entity.ModEntities;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.resources.Identifier;
@@ -13,6 +14,7 @@ public final class ImmersiveHelper implements ModInitializer {
     @Override
     public void onInitialize() {
         ModEntities.register();
+        AliceCommands.register();
     }
 
     public static Identifier id(String path) {

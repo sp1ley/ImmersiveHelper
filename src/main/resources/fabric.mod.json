@@ -3,7 +3,7 @@
   "id": "immersive_helper",
   "version": "${version}",
   "name": "Immersive Helper",
-  "description": "A Fabric mod that adds the foundation for an interactive companion NPC.",
+  "description": "A Fabric mod that adds Alice, an interactive adventure companion.",
   "authors": [
     "andBobiq"
   ],
@@ -11,6 +11,7 @@
     "sources": "https://github.com/sp1ley/ImmersiveHelper"
   },
   "license": "GPL-3.0-only",
+  "icon": "assets/immersive_helper/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

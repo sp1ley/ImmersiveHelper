@@ -1,3 +1,20 @@
 {
-  "entity.immersive_helper.guide": "Алиса"
+  "entity.immersive_helper.guide": "Алиса",
+  "mode.immersive_helper.follow": "FOLLOW",
+  "mode.immersive_helper.stay": "STAY",
+  "message.immersive_helper.alice.greeting": "<Алиса> Привет! Я Алиса. Буду следовать за тобой, собирать полезные вещи и помогать в бою.",
+  "message.immersive_helper.alice.stay": "<Алиса> Хорошо, я подожду здесь.",
+  "message.immersive_helper.alice.follow": "<Алиса> Я снова иду за тобой.",
+  "message.immersive_helper.alice.not_owner": "<Алиса> Только мой владелец может изменить мой режим.",
+  "message.immersive_helper.alice.bag_full": "<Алиса> Моя сумка заполнена. Забери часть предметов.",
+  "message.immersive_helper.alice.food": "<Алиса> Ты сильно ранен. Возьми еду!",
+  "message.immersive_helper.alice.death": "<Алиса> Похоже, мне нужно немного отдохнуть...",
+  "message.immersive_helper.alice.teleported": "<Алиса> Я немного отстала, но уже догнала тебя.",
+  "command.immersive_helper.alice.already_exists": "У тебя уже есть активная Алиса.",
+  "command.immersive_helper.alice.summon_failed": "Не удалось призвать Алису.",
+  "command.immersive_helper.alice.no_safe_position": "Рядом нет безопасного места для Алисы.",
+  "command.immersive_helper.alice.not_found": "Твоя Алиса не найдена.",
+  "command.immersive_helper.alice.dismissed": "<Алиса> До встречи! Передано предметов: %s, оставлено рядом: %s.",
+  "command.immersive_helper.alice.collected": "<Алиса> Я передала тебе %s предметов. В сумке осталось %s.",
+  "command.immersive_helper.alice.status": "Алиса: режим %s, здоровье %s/%s, занято слотов %s/18, предметов %s."
 }
