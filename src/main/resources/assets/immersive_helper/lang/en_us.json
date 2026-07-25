@@ -10,6 +10,7 @@
   "message.immersive_helper.alice.not_owner": "<Alice> Only my owner can change my mode.",
   "message.immersive_helper.alice.bag_full": "<Alice> My bag is full. Please take some items.",
   "message.immersive_helper.alice.food": "<Alice> You're badly hurt. Take some food!",
+  "message.immersive_helper.alice.food_hungry": "<Alice> You're hungry. Here, take some food!",
   "message.immersive_helper.alice.death": "<Alice> Looks like I need to rest for a while...",
   "message.immersive_helper.alice.teleported": "<Alice> I fell behind, but I've caught up now.",
   "command.immersive_helper.alice.already_exists": "You already have an active Alice.",

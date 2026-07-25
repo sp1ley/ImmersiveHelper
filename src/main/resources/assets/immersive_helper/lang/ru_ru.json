@@ -10,6 +10,7 @@
   "message.immersive_helper.alice.not_owner": "<Алиса> Только мой владелец может изменить мой режим.",
   "message.immersive_helper.alice.bag_full": "<Алиса> Моя сумка заполнена. Забери часть предметов.",
   "message.immersive_helper.alice.food": "<Алиса> Ты сильно ранен. Возьми еду!",
+  "message.immersive_helper.alice.food_hungry": "<Алиса> Ты проголодался. Держи еду!",
   "message.immersive_helper.alice.death": "<Алиса> Похоже, мне нужно немного отдохнуть...",
   "message.immersive_helper.alice.teleported": "<Алиса> Я немного отстала, но уже догнала тебя.",
   "command.immersive_helper.alice.already_exists": "У тебя уже есть активная Алиса.",

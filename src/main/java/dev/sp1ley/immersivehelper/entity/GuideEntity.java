@@ -30,6 +30,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
@@ -100,6 +101,7 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         goalSelector.addGoal(3, new PickUpItemsGoal());
         goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 8.0F));
         goalSelector.addGoal(9, new RandomLookAroundGoal(this));
+        targetSelector.addGoal(1, new HurtByTargetGoal(this));
     }
 
     @Override
@@ -116,8 +118,8 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             teleportMessageCooldown--;
         }
 
+        updateCombatTarget();
         if (tickCount % 10 == 0) {
-            updateCombatTarget();
             tryGiveEmergencyFood(level);
         }
         if (ownerUuid != null && tickCount % 20 == 0) {
@@ -457,11 +459,13 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             return;
         }
         Player owner = getOwner();
+        boolean ownerIsHungry = owner != null && owner.getFoodData().getFoodLevel() <= 2;
+        boolean ownerIsBadlyHurt = owner != null && owner.getHealth() <= 6.0F;
         if (owner == null
                 || !owner.isAlive()
                 || owner.isCreative()
                 || owner.isSpectator()
-                || owner.getHealth() > 6.0F
+                || (!ownerIsHungry && !ownerIsBadlyHurt)
                 || distanceToSqr(owner) > 12.0 * 12.0) {
             return;
         }
@@ -485,7 +489,9 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
             bag.setChanged();
             bagFullNotified = false;
             foodCooldown = FOOD_COOLDOWN_TICKS;
-            owner.sendSystemMessage(Component.translatable("message.immersive_helper.alice.food"));
+            owner.sendSystemMessage(Component.translatable(ownerIsHungry
+                    ? "message.immersive_helper.alice.food_hungry"
+                    : "message.immersive_helper.alice.food"));
             return;
         }
     }
@@ -497,7 +503,11 @@ public final class GuideEntity extends PathfinderMob implements GeoEntity {
         return stack.getItem() != Items.GOLDEN_APPLE
                 && stack.getItem() != Items.ENCHANTED_GOLDEN_APPLE
                 && stack.getItem() != Items.CHORUS_FRUIT
-                && stack.getItem() != Items.SUSPICIOUS_STEW;
+                && stack.getItem() != Items.SUSPICIOUS_STEW
+                && stack.getItem() != Items.POISONOUS_POTATO
+                && stack.getItem() != Items.PUFFERFISH
+                && stack.getItem() != Items.ROTTEN_FLESH
+                && stack.getItem() != Items.SPIDER_EYE;
     }
 
     private void playerInventoryOrDrop(ServerLevel level, Player player, ItemStack offered) {
