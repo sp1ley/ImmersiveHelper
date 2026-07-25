@@ -1,0 +1,44 @@
+# Журнал изменений
+
+Все заметные изменения проекта документируются в этом файле.
+
+Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), а версии следуют [Semantic Versioning](https://semver.org/lang/ru/).
+
+## [0.1.0] - 2026-07-25
+
+### Добавлено
+
+- Основа сущности Guide, её базовых атрибутов и клиентского GeckoLib renderer.
+- README на русском языке.
+- `.editorconfig`, `.gitattributes` и расширенный `.gitignore`.
+- GitHub Actions workflow для проверки Wrapper и сборки на Java 25.
+
+### Изменено
+
+- Основа проекта перенесена из ветки `1.21/dev`.
+- Целевая версия обновлена с Minecraft 1.21.11 до 26.2.
+- Java обновлена с 21 до 25.
+- Gradle Wrapper обновлён до 9.6.1.
+- Сборка переведена с Groovy DSL на Gradle Kotlin DSL.
+- Fabric Loader, Fabric API, Fabric Loom и GeckoLib обновлены до совместимых версий.
+- Проект переведён на unobfuscated Minecraft API без Yarn mappings.
+- Название нормализовано до `Immersive Helper`, артефакт — до `immersive-helper`.
+- Mod ID изменён с `imh_mod` на `immersive_helper`.
+- Entity ID изменён на `immersive_helper:guide`.
+- Java package изменён на `dev.sp1ley.immersivehelper`.
+- Общий и клиентский код разделены по source sets.
+- Пути будущих GeckoLib-ресурсов приведены к единой структуре.
+
+### Удалено
+
+- Groovy-файлы `build.gradle` и `settings.gradle`.
+- Yarn-конфигурация для Minecraft 1.21.11.
+- Пустой и неиспользуемый класс регистрации предметов.
+- Legacy-иконка со старым названием проекта.
+- Старые package-пути, идентификаторы и метаданные версии.
+- Генерируемые каталоги, IDE-файлы и runtime-артефакты из отслеживаемой структуры.
+
+### Исправлено
+
+- Регистрация сущности, атрибутов и renderer адаптирована к API Minecraft 26.2.
+- Метаданные, локализации и зависимости приведены к единому Mod ID.
