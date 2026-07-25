@@ -19,6 +19,6 @@ public final class GuideModel extends GeoModel<GuideEntity> {
 
     @Override
     public Identifier getAnimationResource(GuideEntity animatable) {
-        return ImmersiveHelper.id("animations/guide.animation.json");
+        return ImmersiveHelper.id("guide.animation");
     }
 }

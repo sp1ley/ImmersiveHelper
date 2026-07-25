@@ -37,6 +37,8 @@ jobs:
       - name: Upload user JAR
         uses: actions/upload-artifact@v7
         with:
-          name: immersive-helper-0.1.0+26.2
-          path: output/immersive-helper-0.1.0+26.2.jar
+          name: immersive-helper-build
+          path: |
+            output/immersive-helper-*.jar
+            !output/immersive-helper-*-sources.jar
           if-no-files-found: error
